@@ -616,10 +616,11 @@ class InputRRManipulation(Manipulation):
 
 class ResponseRRNaiveManipulation(ResponseRRManipulation):
     def __init__(self, input_graph, n_mal, epsilon, delta, inflation_factors, 
-                 threshold_reduction = None):
+                 threshold_reduction = None, num_flag = 0):
         super(ResponseRRNaiveManipulation, self).__init__(
                 input_graph, n_mal, epsilon, delta, inflation_factors, 
                 threshold_reduction)
+        self.num_flag = num_flag
 
     def get_degree_estimates(self):
         mat = self.input_graph.get_adj_matrix().copy()
@@ -646,15 +647,28 @@ class ResponseRRNaiveManipulation(ResponseRRManipulation):
                 r_1 = my_responses.sum()
             deg_vec[i] = (r_1 - self.rho * self.n) / (1-2*self.rho)
 
+        if self.num_flag > 0:
+            j = np.random.choice(self.n)
+            conditional_probs = []
+            for t in range(0, self.n):
+                denom = noisy_resp[:, t].sum()
+                num = noisy_resp[:, t] + noisy_resp[:, j]
+                num = (num == 2).sum()
+                conditional_probs.append(num / denom)
+            worst_vertices = np.argsort(conditional_probs)[:self.num_flag]
+            deg_vec[worst_vertices] = np.nan
+
+
         #pdb.set_trace()
         return deg_vec
 
 class InputRRNaiveManipulation(InputRRManipulation):
     def __init__(self, input_graph, n_mal, epsilon, delta, inflation_factors, 
-                 threshold_reduction = None):
+                 threshold_reduction = None, num_flag = 0):
         super(InputRRNaiveManipulation, self).__init__(
                 input_graph, n_mal, epsilon, delta, inflation_factors,
                 threshold_reduction)
+        self.num_flag = num_flag
 
     def get_degree_estimates(self):
         mat = self.input_graph.get_adj_matrix().copy()
@@ -680,6 +694,17 @@ class InputRRNaiveManipulation(InputRRManipulation):
                 my_responses = noisy_resp[i, :]
                 r_1 = my_responses.sum()
             deg_vec[i] = (r_1 - self.rho * self.n) / (1-2*self.rho)
+
+        if self.num_flag > 0:
+            j = np.random.choice(self.n)
+            conditional_probs = []
+            for t in range(0, self.n):
+                denom = noisy_resp[:, t].sum()
+                num = noisy_resp[:, t] + noisy_resp[:, j]
+                num = (num == 2).sum()
+                conditional_probs.append(num / denom)
+            worst_vertices = np.argsort(conditional_probs)[:self.num_flag]
+            deg_vec[worst_vertices] = np.nan
 
         #pdb.set_trace()
         return deg_vec
